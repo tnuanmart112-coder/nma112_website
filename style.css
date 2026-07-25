@@ -1,0 +1,108 @@
+/* ---------- Reset ---------- */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+/* ---------- Base ---------- */
+
+html{
+
+    scroll-behavior:smooth;
+
+}
+
+body{
+
+    color:white;
+
+    font-family:"Noto Sans TC",sans-serif;
+
+    line-height:1.8;
+
+    overflow-x:hidden;
+
+}
+
+/* ---------- Fixed Background ---------- */
+
+.background{
+
+    position:fixed;
+
+    inset:0;
+
+    z-index:-1;
+
+    background:
+        linear-gradient(
+            180deg,
+            #303030 0%,
+            #171717 10%,
+            #1d1d1d 80%,
+            #4a4a4a 100%
+        );
+
+}
+
+/* ---------- Layout ---------- */
+
+.container{
+
+    width:min(900px,90%);
+
+    margin:0 auto;
+
+    padding:120px 0;
+
+}
+
+/* ---------- Typography ---------- */
+
+h1{
+
+    font-size:clamp(2rem,4vw,3rem);
+
+    letter-spacing:0.1em;
+
+    margin-bottom:60px;
+
+    text-align:center;
+
+}
+
+p{
+
+    font-size:clamp(1rem,1.2vw,1.15rem);
+
+    color:#dddddd;
+
+    text-align:justify;
+
+    margin-bottom:2rem;
+
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width:768px){
+
+    .container{
+
+        width:92%;
+
+        padding:64px 0;
+
+    }
+
+    h1{
+
+        margin-bottom:40px;
+
+        letter-spacing:0.05em;
+
+    }
+
+}
