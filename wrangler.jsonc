@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "nma112-exhibition-sync",
+  "main": "worker/src/index.js",
+  "compatibility_date": "2026-08-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "SHEET_CSV_URL": "https://docs.google.com/spreadsheets/d/1NnxwN4CLQGogszMpOHnaMlK2ePeUQu0PRl8DBJE5-bU/export?format=csv"
+  },
+  "r2_buckets": [
+    {
+      "binding": "EXHIBITION_BUCKET",
+      "bucket_name": "nma112-exhibition-assets"
+    }
+  ],
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  }
+}
