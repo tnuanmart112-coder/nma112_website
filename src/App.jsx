@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { SiteNav } from "./components/SiteNav.jsx";
 import { SiteBackground } from "./components/SiteBackground.jsx";
 import { ActivityInfoPage } from "./pages/ActivityInfoPage.jsx";
@@ -17,7 +18,20 @@ const routes = {
 };
 
 export default function App() {
-  const pathname = decodeURI(window.location.pathname);
+  const [pathname, setPathname] = useState(decodeURI(window.location.pathname));
+
+  useEffect(() => {
+    const handleNavigation = () => {
+      setPathname(decodeURI(window.location.pathname));
+    };
+
+    window.addEventListener("popstate", handleNavigation);
+
+    return () => {
+      window.removeEventListener("popstate", handleNavigation);
+    };
+  }, []);
+
   const Page = routes[pathname] || MainPage;
 
   return (
