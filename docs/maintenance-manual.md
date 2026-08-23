@@ -21,6 +21,17 @@ Cloudflare R2 儲存圖片與整理後資料
 網站自動讀到更新後的資料
 ```
 
+## 開會講解順序
+
+如果要跟夥伴解釋整個專案，可以照這個順序講：
+
+1. 先講資料更新方式：平常改 Google Sheet 和 Google Drive，不需要改程式。
+2. 再講雲端同步：Cloudflare Worker 每 15 分鐘讀 Sheet/Drive，圖片會進 R2。
+3. 再講前端架構：`src/pages/` 是分頁，`src/components/` 是畫面零件，`src/services/` 是資料來源。
+4. 接著講每個資料夾和檔案：照「資料夾總覽」與「每個檔案的作用與修改時機」講。
+5. 補充後台同步頁：`/admin` 可以手動同步資料，但不會出現在觀眾導覽列。
+6. 最後講 Git 流程：開分支、commit、push、Pull Request、Cloudflare Pages 自動部署。
+
 ## 作品文字資料在哪裡改
 
 作品文字資料請改 Google Sheet：
@@ -35,7 +46,12 @@ Cloudflare R2 儲存圖片與整理後資料
 - `創作類型`
 - `媒材`
 - `作品尺寸(cm)`
-- `Google Drive 圖片連結`
+- `主圖連結`
+- `附圖1連結`
+- `附圖2連結`
+- `附圖3連結`
+- `附圖4連結`
+- `附圖5連結`
 
 目前不會在觀眾頁面顯示：
 
@@ -47,7 +63,7 @@ Cloudflare R2 儲存圖片與整理後資料
 
 ## 作品圖片在哪裡改
 
-圖片請放在 Google Drive，並在 Google Sheet 的 `Google Drive 圖片連結` 欄位貼上對應圖片連結。
+圖片請放在 Google Drive，並在 Google Sheet 的 `主圖連結`、`附圖1連結` 到 `附圖5連結` 欄位貼上對應圖片連結。
 
 注意事項：
 
@@ -79,6 +95,8 @@ Google Sheet 圖片欄位目前使用：
 如果某件作品有 5 張附圖，就填到 `附圖5連結`。
 
 Worker 同步時會自動忽略空白欄位，所以每件作品可以有不同數量的附圖。
+
+如果 `主圖連結` 空白但 `附圖1連結` 有填，作品列表會暫時用第一張附圖當封面。不過正式資料整理時，仍建議每件作品都填 `主圖連結`，封面會比較穩定。
 
 原因是：
 
@@ -161,6 +179,37 @@ IMG_0001.jpg
 2. 等下一次 Worker 自動同步。
 3. 重新整理網站後就會看到更新。
 
+## 後台手動同步
+
+如果不想等 15 分鐘，可以由網頁組使用隱藏管理頁手動同步。
+
+管理頁網址：
+
+```text
+http://127.0.0.1:5173/admin
+```
+
+正式網站也可以直接在正式網域後面加：
+
+```text
+/admin
+```
+
+使用方式：
+
+1. 打開 `/admin`。
+2. 在「同步密碼」輸入 Worker 的 `SYNC_TOKEN`。
+3. 按「手動同步 Google Sheet」。
+4. 成功後會看到更新時間、作品數量、圖片錯誤數。
+5. 再回到 `/作品介紹` 重新整理頁面確認。
+
+注意事項：
+
+- `/admin` 不會出現在一般導覽列，觀眾正常瀏覽不會看到。
+- `SYNC_TOKEN` 是後台密碼，不要貼在公開文件、Google Sheet、GitHub commit 或前台程式。
+- 如果同步成功但作品頁沒更新，先重新整理作品頁；Cloudflare 快取最多可能等約 1 分鐘。
+- 如果「圖片錯誤」不是 0，代表某些 Google Drive 圖片可能權限不對、連結不是單一圖片檔，或 Drive 回傳了非圖片內容。
+
 ## 觀眾會看到哪些分頁
 
 目前網站分為：
@@ -172,6 +221,10 @@ IMG_0001.jpg
 - `/參觀地圖`
 
 目前 `活動資訊`、`周邊商品`、`參觀地圖` 是頁面骨架，之後可以再補正式內容。
+
+另外有一個隱藏管理頁：
+
+- `/admin`：後台手動同步，不放在觀眾導覽列。
 
 ## 程式碼在哪裡
 
@@ -254,6 +307,7 @@ index.html
 - `/活動資訊`
 - `/周邊商品`
 - `/參觀地圖`
+- `/admin`：隱藏後台同步頁，不放在一般導覽列。
 
 如果要新增一個完整分頁，通常會在這裡新增檔案，然後去 `src/App.jsx` 和 `src/components/SiteNav.jsx` 註冊。
 
@@ -277,7 +331,7 @@ index.html
 
 目前主要是 `googleSheetsService.js`。
 
-現在 R2 尚未啟用時，本機會暫時讀 Google Sheet CSV；正式串 Worker 後，會改讀 `VITE_EXHIBITION_API_URL` 指定的 Worker API。
+目前本機和正式部署都會優先讀 Cloudflare Worker API。只有 Worker API 讀不到時，本機才會退回 `/sheet.csv` 臨時文字模式。
 
 ### `src/utils/`
 
@@ -377,6 +431,7 @@ index.html
 | `src/pages/ActivityInfoPage.jsx` | 活動資訊頁，目前是骨架。 | 要放講座、活動時程、表演資訊時改。 |
 | `src/pages/MerchandisePage.jsx` | 周邊商品頁，目前是骨架。 | 要放商品照片、價格、購買資訊時改。 |
 | `src/pages/MapPage.jsx` | 參觀地圖頁，目前是骨架。 | 要放展場地圖、交通方式、動線資訊時改。 |
+| `src/pages/AdminPage.jsx` | 隱藏後台同步頁，讓網頁組手動同步 Google Sheet 與圖片。 | 要改後台同步畫面、結果顯示、錯誤提示時改。 |
 
 ### `src/components/` 畫面元件
 
@@ -407,8 +462,9 @@ const POLL_INTERVAL_MS = 300000;
 
 | 檔案 | 作用 | 什麼時候會改 |
 | --- | --- | --- |
-| `src/services/googleSheetsService.js` | 前端資料服務。正式模式讀 Worker API；R2 未啟用時，本機暫時讀 `/sheet.csv`。 | 改 API URL 邏輯、改資料取得方式、改 fallback 策略時改。 |
+| `src/services/googleSheetsService.js` | 前端資料服務。優先讀 Worker API；讀不到時，本機會退回 `/sheet.csv` 臨時文字模式；再失敗才用 mock data。 | 改 API URL 邏輯、改資料取得方式、改 fallback 策略時改。 |
 | `src/services/exhibitionApi.js` | 保留相容用，現在轉接到 `googleSheetsService.js`。 | 通常不改。之後若確認沒人引用，可以清掉。 |
+| `src/services/syncService.js` | 後台同步服務。`/admin` 會透過它呼叫 Worker 的 `POST /api/sync`。 | 改手動同步 API 位置、授權 header、錯誤處理時改。 |
 
 ### `src/utils/` 工具
 
@@ -574,9 +630,9 @@ docs/cloudflare-data-sync.md
 
 ### 只改作品圖片
 
-目前先改 Google Drive 圖片與 Sheet 的圖片連結。
+目前先改 Google Drive 圖片與 Sheet 的 `主圖連結` / `附圖1連結` 到 `附圖5連結`。
 
-R2 正式啟用後，Worker 會同步圖片到 R2。
+Worker 會同步圖片到 R2。
 
 不需要改前端程式。
 
@@ -688,6 +744,14 @@ Worker 主要 API：
 - `POST /api/sync`：手動同步資料，僅管理者使用。
 
 手動同步 API 需要 `SYNC_TOKEN`，不要公開給觀眾或放在前端。
+
+如果之後要更換後台同步密碼，由負責 Cloudflare 的人執行：
+
+```bash
+npx wrangler secret put SYNC_TOKEN
+```
+
+終端機會要求輸入新的密碼。輸入後不要把密碼 commit 到 GitHub。
 
 ## 發佈網站更新
 
@@ -849,10 +913,10 @@ git switch <分支名稱>
 
 ### 目前這個專案的狀態
 
-目前本機主要分支是：
+目前這批 React + Cloudflare 修改所在分支是：
 
 ```text
-main
+feature/react-cloudflare-data-sync
 ```
 
 遠端已看到：
@@ -910,6 +974,32 @@ https://nma112-exhibition-sync.tnuanmart112.workers.dev/api/exhibitions
 - Worker 同步時無法從 Google Drive 下載圖片。
 - R2 bucket 尚未建立或尚未啟用。
 
+### 手動同步後要看哪裡
+
+在 `/admin` 同步成功後會看到：
+
+- 更新時間：這次同步完成的時間。
+- 作品數量：目前 Worker 從 Sheet 整理出的作品筆數。
+- 圖片錯誤：應該盡量是 0。
+
+如果圖片錯誤不是 0，先看錯誤清單中的作品名稱與欄位，再回 Google Sheet 檢查該欄位的 Drive 連結。
+
+### 可以自動壓縮圖片嗎
+
+可以，但要分成兩種情況：
+
+1. 網站顯示時壓縮：使用 Cloudflare Images / Image Transformations，在圖片送到瀏覽器前轉成比較小的版本，例如 WebP 或 AVIF。這可以讓作品頁載入更快。
+2. R2 裡面也存壓縮版：同步圖片時另外產生壓縮檔並寫回 R2。這可以減少儲存容量，但流程比較多一步。
+
+目前網站是先把 Google Drive 圖片同步進 R2，再由 Worker 回傳給前端。下一階段如果要改善速度，建議先做「網站顯示時壓縮」，不要急著覆蓋原圖。
+
+Cloudflare Images Free plan 目前每月包含 5,000 次 unique transformations。因為同一張圖如果產生不同尺寸會算不同 transformation，所以建議先固定少數尺寸，例如：
+
+- 作品卡片圖：寬 900。
+- 作品內頁大圖：寬 1600。
+
+這樣比較容易控制用量。
+
 ### 新增欄位後網站沒有顯示
 
 新增欄位後，通常還需要修改：
@@ -921,12 +1011,14 @@ https://nma112-exhibition-sync.tnuanmart112.workers.dev/api/exhibitions
 ## 目前待完成事項
 
 - 下一次 GitHub push 後，確認 Cloudflare Pages build 有讀到 `VITE_EXHIBITION_API_URL`。
-- 如需手動同步按鈕，設定 Worker secret `SYNC_TOKEN` 並製作管理端操作方式。
 - 決定圖片長期要全部透過 Worker 代理，或改成 R2 自訂網域。
+- 決定是否啟用 Cloudflare Images / Image Transformations 做圖片輸出最佳化。
 
-## R2 尚未啟用時的臨時開發模式
+## Worker API 失敗時的臨時開發模式
 
-本機開發時，如果尚未設定 `VITE_EXHIBITION_API_URL`，前端會透過 Vite proxy 讀取：
+本機開發時，前端正常會優先讀 Worker API。
+
+如果 Worker API 暫時讀不到，前端會透過 Vite proxy 退回讀取：
 
 ```text
 /sheet.csv

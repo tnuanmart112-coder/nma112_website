@@ -1,6 +1,7 @@
 import { SiteNav } from "./components/SiteNav.jsx";
 import { SiteBackground } from "./components/SiteBackground.jsx";
 import { ActivityInfoPage } from "./pages/ActivityInfoPage.jsx";
+import { AdminPage } from "./pages/AdminPage.jsx";
 import { MainPage } from "./pages/MainPage.jsx";
 import { MapPage } from "./pages/MapPage.jsx";
 import { MerchandisePage } from "./pages/MerchandisePage.jsx";
@@ -12,6 +13,7 @@ const routes = {
   "/活動資訊": ActivityInfoPage,
   "/周邊商品": MerchandisePage,
   "/參觀地圖": MapPage,
+  "/admin": AdminPage,
 };
 
 export default function App() {

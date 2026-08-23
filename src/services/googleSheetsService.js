@@ -8,7 +8,7 @@ const sheetCsvUrl = import.meta.env.VITE_GOOGLE_SHEET_CSV_URL || "/sheet.csv";
 
 export async function fetchExhibitionData() {
   try {
-    return fetchWorkerData(apiUrl);
+    return await fetchWorkerData(apiUrl);
   } catch (workerError) {
     console.warn("Worker API 載入失敗，改用 Google Sheet CSV 臨時模式。", workerError);
 

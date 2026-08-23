@@ -20,6 +20,9 @@ export function normalizeWorks(rows = []) {
 function normalizeWork(row, index) {
   const title = readField(row, fieldMap.title);
   const author = readField(row, fieldMap.author);
+  const galleryImages = Array.isArray(row.galleryImages) ? row.galleryImages : [];
+  const galleryImageUrls = readGalleryImageUrls(row);
+  const fallbackImageUrl = row.coverImage?.url || galleryImages[0]?.url || "";
 
   return {
     id: row.id || createWorkId(title, author, index),
@@ -30,12 +33,12 @@ function normalizeWork(row, index) {
     media: readField(row, fieldMap.media),
     dimensions: readField(row, fieldMap.dimensions),
     installation: readField(row, fieldMap.installation),
-    imageUrl: readField(row, fieldMap.imageUrl),
+    imageUrl: readField(row, fieldMap.imageUrl) || fallbackImageUrl,
     imageKey: readField(row, fieldMap.imageKey),
     driveImageUrl: readField(row, fieldMap.driveImageUrl),
     coverImage: row.coverImage || null,
-    galleryImages: Array.isArray(row.galleryImages) ? row.galleryImages : [],
-    galleryImageUrls: readGalleryImageUrls(row),
+    galleryImages,
+    galleryImageUrls,
     source: row,
   };
 }
