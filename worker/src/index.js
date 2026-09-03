@@ -1,4 +1,4 @@
-const SHEET_ID = "1NnxwN4CLQGogszMpOHnaMlK2ePeUQu0PRl8DBJE5-bU";
+const SHEET_ID = "1MxKJMaBHAe4d2xEc_IcCQQGDNk8nhfRIyQXUV7zFqaw";
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 const DATA_KEY = "data/exhibitions.json";
 
@@ -245,9 +245,10 @@ function readGalleryImageUrls(row) {
 
 function csvToObjects(csvText) {
   const rows = parseCsv(csvText);
-  const headers = rows[0] || [];
+  const headerIndex = findHeaderIndex(rows);
+  const headers = rows[headerIndex] || [];
 
-  return rows.slice(1).map((row) => {
+  return rows.slice(headerIndex + 1).map((row) => {
     const object = {};
 
     headers.forEach((header, index) => {
@@ -256,6 +257,11 @@ function csvToObjects(csvText) {
 
     return object;
   });
+}
+
+function findHeaderIndex(rows) {
+  const index = rows.findIndex((row) => row.includes("作品名") && row.includes("作者"));
+  return index >= 0 ? index : 0;
 }
 
 function parseCsv(input) {

@@ -3,9 +3,9 @@
 ## 目前資料來源
 
 - Google Sheet：
-  `https://docs.google.com/spreadsheets/d/1NnxwN4CLQGogszMpOHnaMlK2ePeUQu0PRl8DBJE5-bU/edit?usp=sharing`
+  `https://docs.google.com/spreadsheets/d/1MxKJMaBHAe4d2xEc_IcCQQGDNk8nhfRIyQXUV7zFqaw/edit?usp=sharing`
 - CSV 讀取 URL：
-  `https://docs.google.com/spreadsheets/d/1NnxwN4CLQGogszMpOHnaMlK2ePeUQu0PRl8DBJE5-bU/export?format=csv`
+  `https://docs.google.com/spreadsheets/d/1MxKJMaBHAe4d2xEc_IcCQQGDNk8nhfRIyQXUV7zFqaw/export?format=csv`
 
 目前讀到的主要欄位：
 

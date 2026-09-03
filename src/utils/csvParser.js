@@ -1,8 +1,9 @@
 export function csvToObjects(csvText) {
   const rows = parseCsv(csvText);
-  const headers = rows[0] || [];
+  const headerIndex = findHeaderIndex(rows);
+  const headers = rows[headerIndex] || [];
 
-  return rows.slice(1).map((row) => {
+  return rows.slice(headerIndex + 1).map((row) => {
     const object = {};
 
     headers.forEach((header, index) => {
@@ -11,6 +12,11 @@ export function csvToObjects(csvText) {
 
     return object;
   });
+}
+
+function findHeaderIndex(rows) {
+  const index = rows.findIndex((row) => row.includes("作品名") && row.includes("作者"));
+  return index >= 0 ? index : 0;
 }
 
 function parseCsv(input) {

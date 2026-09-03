@@ -36,7 +36,7 @@ Cloudflare R2 儲存圖片與整理後資料
 
 作品文字資料請改 Google Sheet：
 
-`https://docs.google.com/spreadsheets/d/1NnxwN4CLQGogszMpOHnaMlK2ePeUQu0PRl8DBJE5-bU/edit?usp=sharing`
+`https://docs.google.com/spreadsheets/d/1MxKJMaBHAe4d2xEc_IcCQQGDNk8nhfRIyQXUV7zFqaw/edit?usp=sharing`
 
 目前前端會讀的主要欄位：
 
