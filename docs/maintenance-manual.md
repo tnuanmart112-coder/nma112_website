@@ -32,6 +32,20 @@ Cloudflare R2 儲存圖片與整理後資料
 5. 補充後台同步頁：`/admin` 可以手動同步資料，但不會出現在觀眾導覽列。
 6. 最後講 Git 流程：開分支、commit、push、Pull Request、Cloudflare Pages 自動部署。
 
+## 目前維護狀態
+
+最後確認日期：2026-09-03
+
+- 正式前端部署專案：Cloudflare Pages 的 `nma112-website`。
+- 正式後端同步專案：Cloudflare Worker 的 `nma112-exhibition-sync`。
+- 正式程式分支：`main`。
+- 作品資料來源已改為目前這份 Google Sheet。
+- Google Sheet 可以有一列表格大標題；程式會自動找到包含 `作品名` 和 `作者` 的欄位列開始讀資料。
+- Worker 已啟用 R2 同步，會把 Google Drive 圖片存進 `nma112-exhibition-assets`。
+- 自動同步頻率目前維持每 15 分鐘一次。
+- `/admin` 後台手動同步已啟用。
+- 後台同步密碼已於 2026-09-03 更新，實際密碼由網頁組私下保存，不寫進 GitHub 文件。
+
 ## 作品文字資料在哪裡改
 
 作品文字資料請改 Google Sheet：
@@ -168,16 +182,27 @@ IMG_0001.jpg
 
 正式部署後，Cloudflare Worker 會定期同步 Google Sheet 與 Google Drive。
 
-目前規劃：
+目前規則：
 
 - 自動同步：每 15 分鐘一次。
 - 手動同步：由網頁組或管理者透過 Worker 的後台 API 觸發。
+- 前端重新抓資料：作品頁開著時，大約每 5 分鐘會重新向 Worker 要一次資料。
+- Worker API 快取：同步後最多可能還有約 1 分鐘快取時間。
 
 因此一般狀況下：
 
 1. 你改完 Google Sheet 或 Drive 圖片。
-2. 等下一次 Worker 自動同步。
-3. 重新整理網站後就會看到更新。
+2. 如果沒有手動同步，就等下一次 Worker 自動同步，最多大約 15 分鐘。
+3. 同步完成後，重新整理網站通常就會看到更新；如果剛好遇到快取，最多再等約 1 分鐘。
+
+如果正在開會、測試資料或需要立刻確認畫面，建議不要等排程，直接進 `/admin` 按手動同步。
+
+可以用這個方式判斷：
+
+- 不急：改完 Sheet 後等自動同步，約 15 分鐘內會更新。
+- 急著看：進 `/admin` 手動同步，成功後回 `/作品介紹` 重新整理。
+- 只改程式碼：需要 commit、push，等 Cloudflare Pages 自動部署。
+- 只改作品文字或圖片：不需要 commit、push，只需要等 Worker 同步或手動同步。
 
 ## 後台手動同步
 
@@ -198,7 +223,7 @@ http://127.0.0.1:5173/admin
 使用方式：
 
 1. 打開 `/admin`。
-2. 在「同步密碼」輸入 Worker 的 `SYNC_TOKEN`。
+2. 在「同步密碼」輸入 Worker 的 `SYNC_TOKEN`。目前密碼已於 2026-09-03 更新為簡短版本，請向網頁負責人索取。
 3. 按「手動同步 Google Sheet」。
 4. 成功後會看到更新時間、作品數量、圖片錯誤數。
 5. 再回到 `/作品介紹` 重新整理頁面確認。
@@ -745,6 +770,8 @@ Worker 主要 API：
 
 手動同步 API 需要 `SYNC_TOKEN`，不要公開給觀眾或放在前端。
 
+目前後台同步密碼已於 2026-09-03 更新，請由網頁負責人私下保管。不要把實際密碼寫進 GitHub、Google Sheet、公開文件或前台程式。
+
 如果之後要更換後台同步密碼，由負責 Cloudflare 的人執行：
 
 ```bash
@@ -913,10 +940,10 @@ git switch <分支名稱>
 
 ### 目前這個專案的狀態
 
-目前這批 React + Cloudflare 修改所在分支是：
+目前正式分支是：
 
 ```text
-feature/react-cloudflare-data-sync
+main
 ```
 
 遠端已看到：
@@ -944,7 +971,7 @@ npm run dev
 http://127.0.0.1:5173/
 ```
 
-目前 R2 尚未啟用時，本機會暫時透過 `/sheet.csv` 直接讀 Google Sheet 文字資料，所以夥伴在 `/作品介紹` 也可以看到 Sheet 更新後的作品文字。
+本機前端如果 Worker API 暫時讀不到，會退回透過 `/sheet.csv` 直接讀 Google Sheet 文字資料，所以夥伴在 `/作品介紹` 仍可以先確認作品文字是否能顯示。
 
 R2 與 Worker 啟用後，本機前端預設會優先讀：
 
@@ -960,7 +987,9 @@ https://nma112-exhibition-sync.tnuanmart112.workers.dev/api/exhibitions
 
 可能原因：
 
-- Worker 還沒跑到下一次同步。
+- Worker 還沒跑到下一次同步，最多大約 15 分鐘。
+- 同步已完成，但 Worker API 或瀏覽器還吃到短暫快取，可以等約 1 分鐘後重新整理。
+- 急著確認時，應該到 `/admin` 按「手動同步 Google Sheet」。
 - Google Sheet 欄位名稱被改掉。
 - Cloudflare Pages 還在快取舊前端。
 - 前端環境變數還沒設定到 Worker API。
@@ -1010,7 +1039,6 @@ Cloudflare Images Free plan 目前每月包含 5,000 次 unique transformations�
 
 ## 目前待完成事項
 
-- 下一次 GitHub push 後，確認 Cloudflare Pages build 有讀到 `VITE_EXHIBITION_API_URL`。
 - 決定圖片長期要全部透過 Worker 代理，或改成 R2 自訂網域。
 - 決定是否啟用 Cloudflare Images / Image Transformations 做圖片輸出最佳化。
 
