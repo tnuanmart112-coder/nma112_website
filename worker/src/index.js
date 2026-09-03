@@ -1,6 +1,7 @@
 const SHEET_ID = "1MxKJMaBHAe4d2xEc_IcCQQGDNk8nhfRIyQXUV7zFqaw";
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 const DATA_KEY = "data/exhibitions.json";
+const DATA_REFRESH_INTERVAL_MS = 30000;
 
 export default {
   async fetch(request, env, ctx) {
@@ -42,17 +43,32 @@ async function handleGetExhibitions(request, env, ctx) {
 
   if (stored) {
     const payload = JSON.parse(await stored.text());
-    return jsonResponse(attachImageUrls(payload, origin), {
-      headers: {
-        "Cache-Control": "public, max-age=60",
-      },
-    });
+
+    if (!shouldRefreshData(payload, env)) {
+      return jsonResponse(attachImageUrls(payload, origin), noStoreInit());
+    }
+
+    try {
+      const result = await syncExhibitionData(env, payload);
+      return jsonResponse(attachImageUrls(result, origin), noStoreInit());
+    } catch (error) {
+      return jsonResponse(
+        attachImageUrls(
+          {
+            ...payload,
+            refreshError: error instanceof Error ? error.message : "Refresh failed",
+          },
+          origin,
+        ),
+        noStoreInit(),
+      );
+    }
   }
 
-  const syncPromise = syncExhibitionData(env);
+  const syncPromise = syncExhibitionData(env, null);
   ctx.waitUntil(syncPromise);
   const result = await syncPromise;
-  return jsonResponse(attachImageUrls(result, origin));
+  return jsonResponse(attachImageUrls(result, origin), noStoreInit());
 }
 
 async function handleGetImage(request, url, env) {
@@ -73,7 +89,8 @@ async function handleGetImage(request, url, env) {
   );
 }
 
-async function syncExhibitionData(env) {
+async function syncExhibitionData(env, previousPayload = null) {
+  const cachedPayload = previousPayload || (await readStoredPayload(env));
   const csvResponse = await fetch(env.SHEET_CSV_URL || SHEET_CSV_URL);
 
   if (!csvResponse.ok) {
@@ -92,9 +109,17 @@ async function syncExhibitionData(env) {
       continue;
     }
 
+    const previousWork = findPreviousWork(cachedPayload, work);
+
     if (work.coverImageUrl) {
       try {
-        work.imageKey = await syncDriveImage(env, work.coverImageUrl, `works/${work.id}/main`);
+        work.imageKey = await syncOrReuseImage(
+          env,
+          work.coverImageUrl,
+          `works/${work.id}/main`,
+          previousWork?.coverImage,
+          previousWork?.coverImageUrl,
+        );
         work.imageUrl = imageApiPath(work.imageKey);
         work.coverImage = {
           key: work.imageKey,
@@ -114,10 +139,12 @@ async function syncExhibitionData(env) {
 
     for (const [galleryIndex, imageUrl] of work.galleryImageUrls.entries()) {
       try {
-        const imageKey = await syncDriveImage(
+        const imageKey = await syncOrReuseImage(
           env,
           imageUrl,
           `works/${work.id}/gallery-${String(galleryIndex + 1).padStart(2, "0")}`,
+          previousWork?.galleryImages?.[galleryIndex],
+          previousWork?.galleryImageUrls?.[galleryIndex],
         );
 
         work.galleryImages.push({
@@ -178,6 +205,14 @@ function imageApiPath(imageKey) {
   return `/api/images/${encodeURIComponent(imageKey)}`;
 }
 
+async function syncOrReuseImage(env, driveImageUrl, keyBase, previousImage, previousDriveImageUrl) {
+  if (previousImage?.key && clean(previousDriveImageUrl) === driveImageUrl) {
+    return previousImage.key;
+  }
+
+  return syncDriveImage(env, driveImageUrl, keyBase);
+}
+
 async function syncDriveImage(env, driveImageUrl, keyBase) {
   const fileId = extractDriveFileId(driveImageUrl);
 
@@ -214,9 +249,10 @@ function normalizeSheetRow(row, index) {
   const title = clean(row["作品名"]);
   const author = clean(row["作者"]);
   const coverImageUrl = clean(row["主圖連結"]) || clean(row["Google Drive 圖片連結"]);
+  const rowId = clean(row["作品編號"]);
 
   return {
-    id: slugify(`${title}-${author}-${index + 1}`),
+    id: slugify(rowId || `${title}-${author}-${index + 1}`),
     title,
     author,
     statement: clean(row["作品理念"]),
@@ -350,6 +386,30 @@ function slugify(value) {
     .replace(/[^\p{L}\p{N}-]+/gu, "");
 
   return slug || crypto.randomUUID();
+}
+
+async function readStoredPayload(env) {
+  const stored = await env.EXHIBITION_BUCKET.get(DATA_KEY);
+  return stored ? JSON.parse(await stored.text()) : null;
+}
+
+function findPreviousWork(payload, work) {
+  return (payload?.works || []).find((previousWork) => previousWork.id === work.id);
+}
+
+function shouldRefreshData(payload, env) {
+  const interval = Number(env.DATA_REFRESH_INTERVAL_MS || DATA_REFRESH_INTERVAL_MS);
+  const updatedAt = Date.parse(payload.updatedAt || "");
+
+  return !Number.isFinite(updatedAt) || Date.now() - updatedAt >= interval;
+}
+
+function noStoreInit() {
+  return {
+    headers: {
+      "Cache-Control": "no-store",
+    },
+  };
 }
 
 async function authorizeManualSync(request, env) {

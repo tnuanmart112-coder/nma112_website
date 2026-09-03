@@ -9,7 +9,8 @@
     "head_sampling_rate": 1
   },
   "vars": {
-    "SHEET_CSV_URL": "https://docs.google.com/spreadsheets/d/1MxKJMaBHAe4d2xEc_IcCQQGDNk8nhfRIyQXUV7zFqaw/export?format=csv"
+    "SHEET_CSV_URL": "https://docs.google.com/spreadsheets/d/1MxKJMaBHAe4d2xEc_IcCQQGDNk8nhfRIyQXUV7zFqaw/export?format=csv",
+    "DATA_REFRESH_INTERVAL_MS": "30000"
   },
   "r2_buckets": [
     {

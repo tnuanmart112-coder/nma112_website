@@ -1,4 +1,5 @@
 const fieldMap = {
+  id: ["id", "作品編號"],
   title: ["title", "作品名", "作品名稱", "name"],
   author: ["author", "作者"],
   statement: ["statement", "作品理念", "description", "說明"],
@@ -25,7 +26,7 @@ function normalizeWork(row, index) {
   const fallbackImageUrl = row.coverImage?.url || galleryImages[0]?.url || "";
 
   return {
-    id: row.id || createWorkId(title, author, index),
+    id: readField(row, fieldMap.id) || createWorkId(title, author, index),
     title,
     author,
     statement: readField(row, fieldMap.statement),

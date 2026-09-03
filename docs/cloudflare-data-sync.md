@@ -27,7 +27,7 @@
 
 React 前端透過 `VITE_EXHIBITION_API_URL` 決定正式 API 位置。
 
-目前前端會優先讀 Worker API。
+目前前端會優先讀 Worker API，作品頁開著時大約每 30 秒會重新請求一次。
 
 若 Worker API 暫時讀不到，本機開發時會退回 `/sheet.csv` 臨時文字模式；如果 Sheet CSV 也讀不到，才會使用 `src/data/mockWorks.js` 的樣本資料，避免畫面完全空白。
 
@@ -45,6 +45,11 @@ VITE_EXHIBITION_API_URL=https://nma112-exhibition-sync.tnuanmart112.workers.dev/
 - `POST /api/sync`：手動同步資料，需要 `Authorization: Bearer <SYNC_TOKEN>`。
 - `scheduled()`：由 Cloudflare Cron Trigger 定期同步。
 
+目前同步分成兩種：
+
+1. **快速更新**：前端每 30 秒請求 `GET /api/exhibitions`，Worker 如果發現 `data/exhibitions.json` 已超過 30 秒，會重新讀 Google Sheet 並更新文字資料。
+2. **完整排程同步**：Cron Trigger 每 15 分鐘執行一次，確保背景資料和圖片定期完整整理。
+
 同步流程：
 
 1. 讀取 Google Sheet CSV。
@@ -54,6 +59,8 @@ VITE_EXHIBITION_API_URL=https://nma112-exhibition-sync.tnuanmart112.workers.dev/
 5. 主圖會存成 `works/<作品id>/main.<副檔名>`。
 6. 附圖會存成 `works/<作品id>/gallery-01.<副檔名>`、`gallery-02.<副檔名>` 等。
 7. 將整理後 JSON 存入 R2 的 `data/exhibitions.json`。
+
+若圖片連結沒有改變，Worker 會沿用上一版 R2 圖片 key，不會每 30 秒重複下載與寫入圖片。
 
 ## 目前部署狀態
 
@@ -66,6 +73,7 @@ VITE_EXHIBITION_API_URL=https://nma112-exhibition-sync.tnuanmart112.workers.dev/
 - 作品 API：
   `https://nma112-exhibition-sync.tnuanmart112.workers.dev/api/exhibitions`
 - Cron Trigger 已啟用：每 15 分鐘同步一次。
+- Worker API 快速刷新已啟用：資料超過 30 秒時，下一次 `GET /api/exhibitions` 會重新讀 Google Sheet。
 - Cloudflare Pages production secret 已設定：
   `VITE_EXHIBITION_API_URL`
 

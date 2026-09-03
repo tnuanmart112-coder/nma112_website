@@ -23,6 +23,7 @@ export async function fetchExhibitionData() {
 
 async function fetchWorkerData(url) {
   const response = await fetch(url, {
+    cache: "no-store",
     headers: {
       Accept: "application/json",
     },
